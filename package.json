@@ -1,0 +1,17 @@
+{
+  "name": "card-news-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "광양본가 인스타그램 카드뉴스 자동 생성/게시 스크립트",
+  "type": "module",
+  "scripts": {
+    "generate": "node src/index.js generate",
+    "render": "node src/index.js render",
+    "run": "node src/index.js run",
+    "post": "node src/index.js post"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "puppeteer": "^23.11.1"
+  }
+}
