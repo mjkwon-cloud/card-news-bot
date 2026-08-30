@@ -3,9 +3,10 @@ import { config as loadEnv } from "dotenv";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { themeForToday, styleForToday } from "./calendar.js";
+import { themeForToday, styleForToday, WEEKLY_THEMES } from "./calendar.js";
 import { generateCardNewsCopy } from "./llm.js";
 import { renderCardNewsImages } from "./render.js";
+import { buildGalleryHtml } from "./gallery.js";
 import { postCarousel } from "./instagram.js";
 
 // 로컬 개발용 — 저장소 루트의 .env를 읽는다. GitHub Actions에서는 secrets로 주입되므로 없어도 무방.
@@ -61,9 +62,21 @@ async function cmdRender(args) {
   const captionPath = path.join(dayDir, "caption.txt");
   fs.writeFileSync(captionPath, `${copy.caption}\n\n${(copy.hashtags ?? []).join(" ")}`.trim(), "utf-8");
 
+  const themeInfo = WEEKLY_THEMES[weekday];
+  const galleryHtml = buildGalleryHtml({
+    copy,
+    dayDir,
+    dateLabel: `${dateStr} (${themeInfo?.day ?? ""})`,
+    themeLabel: themeInfo?.theme ?? "",
+    titleDate: dateStr.slice(5).replace("-", "/"),
+  });
+  const galleryPath = path.join(dayDir, "gallery.html");
+  fs.writeFileSync(galleryPath, galleryHtml, "utf-8");
+
   console.log(`렌더링 완료 → ${dayDir}`);
   for (const p of paths) console.log(`  - ${p}`);
   console.log(`  - ${captionPath}`);
+  console.log(`  - ${galleryPath} (Artifact로 발행해서 Slack에 링크 공유)`);
 }
 
 async function cmdRun() {

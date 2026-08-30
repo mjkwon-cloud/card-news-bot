@@ -6,10 +6,13 @@
 
 ## 무엇을 하는가
 
-1. 오늘 요일에 맞는 주제(`src/calendar.js`)와 참고 스타일(10개 실제 한우/소고기 전문점 계정 로테이션)을 정한다.
+1. 오늘 요일에 맞는 주제(`src/calendar.js`, 일요일 포함 매일)와 참고 스타일(10개 실제 한우/소고기 전문점 계정 로테이션)을 정한다.
 2. Gemini(OpenAI 호환 엔드포인트)로 캐러셀 5슬라이드 카피(표지/공감/정보/신뢰/CTA) + 캡션 + 해시태그를 생성한다.
 3. 광양본가 실사진(`assets/photos/`, 공개 리뷰 플랫폼에서 확보) 위에 카피를 얹어 1080×1350 PNG 5장을 렌더링한다.
-4. 결과를 `out/YYYY-MM-DD/`에 저장하고 GitHub에 커밋한다 (GitHub Actions가 매일 자동 실행).
+4. 5장 + 캡션을 이미지가 박힌 HTML 갤러리 페이지(`out/YYYY-MM-DD/gallery.html`) 한 장으로 묶는다.
+5. 결과를 `out/YYYY-MM-DD/`에 커밋/push하고, 갤러리 페이지를 Artifact로 발행해 그 링크를 Slack(본인 DM)으로 보낸다.
+
+매일 밤 23:00(KST)에 Claude 스케줄 루틴(cron)이 이 전체 과정을 자동 실행한다 — GitHub Actions가 아니라 `/schedule`로 만든 클라우드 루틴이 실제 동작 주체다 (아래 "자동 실행" 참고).
 
 ## 디자인
 
@@ -25,9 +28,18 @@ npm run render      # 그 카피로 이미지 5장 렌더링 → out/YYYY-MM-DD/
 npm run run         # generate + render 한 번에
 ```
 
-일요일은 정기휴무일이라 아무것도 생성하지 않는다(정상 동작).
+일요일에도 콘텐츠는 생성된다(정기휴무 안내 · 다음 주 예고 테마).
 
 `samples/monday-demo/`에 실제 생성 결과 예시가 있다.
+
+## 자동 실행 (Claude 스케줄 루틴)
+
+`/schedule`로 만든 클라우드 루틴 2개가 이 저장소를 체크아웃해서 매일 실행한다:
+
+- **매일 23:00 KST** — `npm run run` → `out/<날짜>/` 커밋·push → `gallery.html`을 Artifact로 발행 → 그 링크 + 캡션 미리보기를 Slack(본인 DM)으로 전송
+- 루틴은 claude.ai 계정에 연결된 것이라 GitHub Actions와 별개다. `.github/workflows/daily-card-news.yml`도 저장소에 있지만, 이 GitHub 계정에서 Actions가 아직 활성화되지 않아 현재는 쓰이지 않는 이중 안전장치일 뿐이다.
+- 루틴 프롬프트에 Gemini API 키가 그대로 들어있다 — 클라우드 루틴에는 GitHub Actions secrets 같은 별도 저장소가 없어서다. 결제 수단이 아닌 개인 키라 감수한 절충.
+- 루틴 관리: https://claude.ai/code/routines
 
 ## 환경변수 (`.env`, 로컬 전용 — 커밋되지 않음)
 
@@ -49,3 +61,4 @@ GitHub Actions에서는 이 값들을 리포지토리 **Secrets**로 등록해�
 
 - **사진 저작권**: `assets/photos/`의 사진은 다이닝코드 등 공개 리뷰 플랫폼에 올라온 리뷰어 사진이다. 광양본가 본인이 찍은 사진이 아니라서 장기 운영 시 매장이 직접 찍은 사진으로 교체하는 게 가장 안전하다.
 - **인스타그램 게시**: `src/instagram.js` + `npm run post`는 Meta 앱 심사를 통과했을 때를 위해 남겨둔 코드다. 현재 워크플로에서는 쓰지 않는다.
+- **Slack 이미지 전송**: Slack 메시지의 이미지 URL 자동 미리보기, Slack Canvas의 외부 이미지 임베드(`![]()`) 둘 다 동작하지 않는 것을 확인했다(Canvas는 `!`를 조용히 지워서 일반 링크로 바꿔버린다). 그래서 이미지를 base64로 페이지에 직접 박아넣은 Artifact 링크 하나를 보내는 방식으로 우회했다.
