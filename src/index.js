@@ -27,9 +27,17 @@ async function cmdGenerate() {
   }
 
   const style = styleForToday();
+  // CARD_NEWS_STYLE_OVERRIDE: 루틴 에이전트가 그날 WebSearch로 직접 조사한 벤치마킹 결과를
+  // 여기에 넣어주면 정적 로테이션(REFERENCE_STYLES) 대신 그걸 톤 참고로 쓴다.
+  const styleOverride = process.env.CARD_NEWS_STYLE_OVERRIDE?.trim();
+  const styleAngle = styleOverride || style.angle;
   console.log(`오늘의 주제: [${today.day}] ${today.theme}`);
-  console.log(`오늘의 톤 참고: ${style.name}${style.handle ? ` (${style.handle})` : ""} — ${style.angle}`);
-  const copy = await generateCardNewsCopy({ theme: today.theme, brief: today.brief, styleAngle: style.angle });
+  if (styleOverride) {
+    console.log(`오늘의 톤 참고(웹서치 벤치마킹): ${styleOverride}`);
+  } else {
+    console.log(`오늘의 톤 참고(고정 로테이션): ${style.name}${style.handle ? ` (${style.handle})` : ""} — ${style.angle}`);
+  }
+  const copy = await generateCardNewsCopy({ theme: today.theme, brief: today.brief, styleAngle });
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
   const outPath = path.join(OUT_DIR, `${todayStr()}.json`);

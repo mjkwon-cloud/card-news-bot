@@ -55,7 +55,7 @@ GitHub Actions에서는 이 값들을 리포지토리 **Secrets**로 등록해�
 
 `src/calendar.js`의 `REFERENCE_STYLES`에 실제 한우/소고기 전문점 인스타그램 계정 10곳(본앤브레드, 삼원가든, 고깃집열 강남본점, 뽀 먹스타그램, 맛집정보특공대, 한우물, 모도우 삼성점, 역삼동 서원정육식당, 우마담, 소와나)의 톤/구성 방식을 요약해뒀고, 날짜별로 매일 다른 곳을 참고하도록 로테이션한다. **문구를 베끼지 않고 톤(예: "표지 후킹 카피 2줄", "예약 CTA를 강하게")만 참고**하도록 프롬프트에 명시했다.
 
-> 원래는 매일 실시간으로 웹 검색해 그날그날 다른 계정을 벤치마킹하는 것을 목표로 했으나, Gemini의 Google Search 그라운딩 기능은 무료 티어 키에서 429(quota exceeded)로 막혀 있어 쓸 수 없었다. 결제를 활성화하면 `src/llm.js`에 `tools:[{google_search:{}}]`를 추가해 실시간 검색으로 바꿀 수 있다.
+> Gemini의 Google Search 그라운딩 기능은 무료 티어 키에서 429(quota exceeded)로 막혀 있어 LLM 호출 안에서 실시간 검색은 못 쓴다. 대신 **매일 실행되는 Claude 스케줄 루틴 자신이 WebSearch로 그날 직접 조사**해서, 그 결과를 `CARD_NEWS_STYLE_OVERRIDE` 환경변수로 넘긴다 — `cmdGenerate`가 이 값이 있으면 고정 로테이션 대신 그걸 톤 참고로 쓴다(`src/index.js`). 로컬에서 이 변수 없이 실행하면 `REFERENCE_STYLES` 고정 로테이션으로 자동 폴백한다.
 
 ## 아직 안 되는 것 / 한계
 
