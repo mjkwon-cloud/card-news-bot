@@ -206,7 +206,10 @@ export async function renderCardNewsImages(copy, outDir, { weekday } = {}) {
     cta: imageDataUri(CTA_PHOTO),
   };
 
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
   const paths = [];
   try {
     const page = await browser.newPage();
