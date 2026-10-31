@@ -19,9 +19,10 @@ const COLORS = {
   hairline: "rgba(239,231,210,0.15)",
 };
 
+// api.fontshare.com(Satoshi)은 이 실행 환경의 egress 정책상 차단되어 있어 제외한다 —
+// CSS의 font-family가 이미 sans-serif로 폴백하도록 선언되어 있어 디자인에 큰 영향은 없다.
 const FONT_LINK =
-  '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Forum&display=swap">' +
-  '<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700&display=swap">';
+  '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Forum&display=swap">';
 
 // SVG feTurbulence 그레인 — 원본 grain.png(6~8% 오파시티 노이즈)을 대체하는 CSS 근사치.
 const GRAIN_DATA_URI =
@@ -206,9 +207,17 @@ export async function renderCardNewsImages(copy, outDir, { weekday } = {}) {
     cta: imageDataUri(CTA_PHOTO),
   };
 
+  // 샌드박스 환경은 egress 프록시(HTTPS_PROXY)를 거치지 않는 직접 접속을 막아둔다.
+  // 크롬은 HTTPS_PROXY를 자동으로 읽지 않으므로 --proxy-server로 명시해야
+  // 구글 폰트 등 외부 리소스 요청이 30s 타임아웃 없이 정상 처리된다.
+  const proxyServer = process.env.HTTPS_PROXY || process.env.https_proxy;
   const browser = await puppeteer.launch({
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      ...(proxyServer ? [`--proxy-server=${proxyServer}`] : []),
+    ],
   });
   const paths = [];
   try {
@@ -221,7 +230,11 @@ export async function renderCardNewsImages(copy, outDir, { weekday } = {}) {
       if (!renderer) throw new Error(`알 수 없는 슬라이드 role: ${slide.role}`);
 
       const html = renderer(slide, i + 1, photoFor[slide.role]);
-      await page.setContent(html, { waitUntil: "networkidle0" });
+      // networkidle0는 크롬이 보내는 백그라운드 통신(세이프브라우징·업데이트 체크 등)이
+      // 이 샌드박스에서 전부 차단되어 끝나지 않는 바람에 매번 멈춘다. 대신 'load'로 기다리고
+      // 웹폰트 로딩만 별도로 확인한다.
+      await page.setContent(html, { waitUntil: "load" });
+      await page.evaluate(() => document.fonts.ready);
 
       const outPath = `${outDir}/slide-${i + 1}-${slide.role}.png`;
       await page.screenshot({ path: outPath, type: "png" });
